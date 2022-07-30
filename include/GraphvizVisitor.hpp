@@ -31,6 +31,7 @@ namespace Pascal
 		void visitUnaryOpNode(AST::UnaryOpNode const& node);
 		void visitProcDeclNode(const AST::ProcDeclNode &node);
 		void visitParamNode(const AST::ParamNode &node);
+		void visitProcCallNode(const AST::ProcCallNode& node);
 
 	private:
 		long internalCounter;

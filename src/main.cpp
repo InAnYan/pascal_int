@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 	
 	unique_ptr<Pascal::AST::ProgramNode> tree;
 
-	Pascal::ReportsManager::SetCurrentFile(prg, argv[1]);
+	Pascal::ReportsManager::SetCurrentFile({ inFileName, prg });
 	
 	try
 	{

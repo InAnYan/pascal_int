@@ -1,8 +1,11 @@
+#include "Symbols.hpp"
+#include "Visitor.hpp"
 #include <pscpch.hpp>
 #include <SemanticAnalyzer.hpp>
 #include <ReportsManager.hpp>
 
 #include <iostream>
+#include <set>
 
 namespace Pascal
 {
@@ -135,27 +138,26 @@ namespace Pascal
 
 	void SemanticAnalyzer::visitProcDeclNode(const AST::ProcDeclNode &node)
 	{
-		std::unique_ptr<std::vector<std::unique_ptr<VariableSymbol>>> procSymParams =
-			std::make_unique<std::vector<std::unique_ptr<VariableSymbol>>>();
+	    std::vector<VariableSymbol> procSymParams;
 		
 		for (auto const& e : node.getParams())
 		{
-			procSymParams->push_back(make_unique<VariableSymbol>(
-										 e->getVar().getToken().str,
-										 m_Symtab->lookup(e->getType().getToken().str), // ???
-										 e->getVar().getToken().pos
-										 ));
+			procSymParams.push_back(VariableSymbol(
+										e->getVar().getToken().str,
+										m_Symtab->lookup(e->getType().getToken().str), // ???
+										e->getVar().getToken().pos
+										));
 		}
 		
 		m_Symtab->define(std::make_shared<ProcedureSymbol>(
-							 node.getToken().str,
-							 node.getToken().pos,
-							 std::move(procSymParams)
+							 node.getProcName().str,
+							 node.getProcName().pos,
+							 procSymParams
 							 ));
 
 		std::shared_ptr<SymbolTable> oldScope = m_Symtab;
 		m_CurrentScopeLevel++;
-		m_Symtab = std::make_shared<SymbolTable>(node.getToken().str, m_CurrentScopeLevel, oldScope);
+		m_Symtab = std::make_shared<SymbolTable>(node.getProcName().str, m_CurrentScopeLevel, oldScope);
 
 		for (auto const& e : node.getParams())
 		{
@@ -182,10 +184,36 @@ namespace Pascal
 
 	void SemanticAnalyzer::visitParamNode(const AST::ParamNode &node)
 	{
-		m_Symtab->define(make_unique<VariableSymbol>(
-							 node.getVar().getToken().str,
-							 m_Symtab->lookup(node.getType().getToken().str),
-							 node.getVar().getToken().pos
-							 ));	
+		std::unique_ptr<VariableSymbol> varSym = std::make_unique<VariableSymbol>(
+			node.getVar().getToken().str,
+			m_Symtab->lookup(node.getType().getToken().str),
+			node.getVar().getToken().pos
+			);
+		varSym->undirty();
+		m_Symtab->define(std::move(varSym));
+	}
+
+	void SemanticAnalyzer::visitProcCallNode(const AST::ProcCallNode& node)
+	{
+		std::shared_ptr<const Symbol> sym = m_Symtab->lookup(node.getProcName().str);
+		if (sym == nullptr)
+		{
+			ReportsManager::ReportError(node.getProcName().pos, ErrorType::CALLING_NON_PROCEDURE);
+		}
+		else
+		{
+			if (sym->getType() != SymbolType::PROCEDURE)
+			{
+				ReportsManager::ReportError(node.getProcName().pos, ErrorType::CALLING_NON_PROCEDURE);
+			}
+			else
+			{
+				const ProcedureSymbol* varSym = reinterpret_cast<const ProcedureSymbol*>(sym.get());
+				if (varSym->getArgs().size() != node.getArguments().size())
+				{
+					ReportsManager::ReportError(node.getProcName().pos, ErrorType::WRONG_ARGUMENTS_COUNT);
+				}
+			}
+		}
 	}
 }

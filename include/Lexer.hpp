@@ -59,6 +59,8 @@ namespace Pascal
 		FILE_END
 	};
 
+	std::string tokenTypeToString(TokenType type);
+	
 	typedef struct
 	{
 		TokenType type;
@@ -66,8 +68,8 @@ namespace Pascal
 		size_t pos;
 	} Token_t;
 
-	std::string tokenTypeToString(TokenType type);
-	
+	extern const Token_t nullToken;
+		
 	typedef Token_t const& Token;
 
 	typedef std::shared_ptr<std::vector<Token_t>> TokenList;

@@ -45,7 +45,7 @@ namespace Pascal
 			BlockNode(std::vector<std::unique_ptr<VarDeclNode>> varDecls,
 					  std::vector<std::unique_ptr<ProcDeclNode>> procDecls,
 					  std::unique_ptr<CompoundNode> compound)
-				: m_VarDecls(varDecls), m_ProcDecls(procDecls),
+				: m_VarDecls(std::move(varDecls)), m_ProcDecls(std::move(procDecls)),
 				  m_Compound(std::move(compound))
 			{}
 			
@@ -109,7 +109,7 @@ namespace Pascal
 		public:
 			ProcDeclNode(Token name, std::vector<std::unique_ptr<ParamNode>> params,
 						 std::unique_ptr<BlockNode> block)
-				: m_Name(name), m_Params(params), m_Block(std::move(block)) {}
+				: m_Name(name), m_Params(std::move(params)), m_Block(std::move(block)) {}
 
 		    Token getProcName() const
 			{ return m_Name; }
@@ -172,11 +172,11 @@ namespace Pascal
 		{
 		public:
 			CompoundNode(std::vector<std::unique_ptr<StatementNode>> statements)
-				: m_Statements(statements)
+				: m_Statements(std::move(statements))
 			{}
 			
 			std::vector<std::unique_ptr<StatementNode>> const& getStatements() const
-			{ return *m_Statements; }
+			{ return m_Statements; }
 
 			void accept(Visitor* visitor) const
 			{
@@ -268,17 +268,21 @@ namespace Pascal
 			Token_t m_Number;
 		};
 
-		class ProcCallNode : public Node
+		class ProcCallNode : public StatementNode
 		{
 		public:
 			ProcCallNode(Token procName,
 						 std::vector<std::unique_ptr<Node>> procArgs)
-				: m_Name(procName), m_Args(procArgs) {}
+				: m_Name(procName), m_Args(std::move(procArgs)) {}
 
 			Token getProcName() const { return m_Name; }
 			std::vector<std::unique_ptr<Node>> const&
 			getArguments() const { return m_Args; }
 
+			void accept(Visitor* visitor) const
+			{
+				visitor->visitProcCallNode(*this);
+			}
 		private:
 			Token_t m_Name;
 		    std::vector<std::unique_ptr<Node>> m_Args;

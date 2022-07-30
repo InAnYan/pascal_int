@@ -4,17 +4,14 @@
 #include <iostream>
 #include <algorithm>
 
-using namespace std;
-
 namespace Pascal
 {
-	vector<string> ReportsManager::includeStack;
+	std::vector<ReportFile> ReportsManager::includeStack;
 
-	shared_ptr<string> ReportsManager::currentFile;
-	string ReportsManager::currentFileName;
+    ReportFile ReportsManager::currentFile;
 	
-	vector<ErrorType> ReportsManager::disallowedErrors;
-	vector<WarningType> ReportsManager::disallowedWarnings;
+	std::vector<ErrorType> ReportsManager::disallowedErrors;
+	std::vector<WarningType> ReportsManager::disallowedWarnings;
 
 	unsigned ReportsManager::errorsCount = 0;
 	unsigned ReportsManager::warningsCount = 0;
@@ -60,63 +57,65 @@ namespace Pascal
 		}
 	}
 
-	void ReportsManager::SetCurrentFile(std::shared_ptr<std::string> source, const std::string &fileName)
+	void ReportsManager::SetCurrentFile(ReportFile const& file)
 	{
-		currentFileName = fileName;
-		currentFile = source;
+		currentFile = file;
 	}
 
-	void ReportsManager::PushInclude(const std::string &fileName)
+	void ReportsManager::PushInclude(ReportFile const& file)
 	{
-		includeStack.push_back(fileName);
+		includeStack.push_back(file);
 	}
 
-	void ReportsManager::PopInclude()
+    ReportFile ReportsManager::PopInclude()
 	{
+		ReportFile temp = includeStack.front();
 		includeStack.pop_back();
+		return temp;
 	}
 
 	void ReportsManager::PrintReport(size_t where, ReportType type, std::string const& msg)
 	{
 		if (!includeStack.empty())
 		{
-			for (string const& fileName : includeStack)
+			for (auto const& e : includeStack)
 			{
-				cout << "In file included from \"" << fileName << "\":" << endl;
+				std::cout << "In file included from \"" << e.fileName << "\":" << std::endl;
 			}
 		}
 		
 		ErrorPos pos = getErrorPos(where);
 		
-		cout << TermColor::BrightWhite << currentFileName << ":" <<
+		std::cout << TermColor::BrightWhite << currentFile.fileName << ":" <<
 			pos.lineNumber << ":" << pos.column << " ";
 		
 		switch (type)
 		{
 		case ReportType::ERROR:
-			cout << TermColor::BrightRed << "error";
+			std::cout << TermColor::BrightRed << "error";
 			break;
 		case ReportType::WARNING:
-			cout << TermColor::BrightMagenta << "warning";
+			std::cout << TermColor::BrightMagenta << "warning";
 			break;
 		case ReportType::NOTE:
-			cout << "note";
+			std::cout << "note";
 			break;
 		}
 		
-		cout  << TermColor::BrightWhite << ": " << msg << endl;
+		std::cout  << TermColor::BrightWhite << ": " << msg << std::endl;
 
-		std::string prefix = " " + to_string(pos.lineNumber) + " | ";
+		std::string prefix = " " + std::to_string(pos.lineNumber) + " | ";
 		
-		cout << prefix << TermColor::Reset <<
-			tabTransform(currentFile->substr(pos.startPos, pos.endPos - pos.startPos + 1)) << endl;
-		cout << string(pos.column + prefix.size(), ' ') << TermColor::BrightGreen << "^";
+		std::cout << prefix << TermColor::Reset <<
+			tabTransform(currentFile.source->substr(pos.startPos, pos.endPos - pos.startPos + 1)) << std::endl;
+		std::cout << std::string(pos.column + prefix.size(), ' ') << TermColor::BrightGreen << "^";
 
-		for (size_t i = pos.where + 1; isalnum((*currentFile)[i]) || (*currentFile)[i] == '.'; i++)
+		for (size_t i = pos.where + 1; isalnum((*currentFile.source)[i]) ||
+				 (*currentFile.source)[i] == '.'; i++)
 		{
-			cout << "~";
+			std::cout << "~";
 		}
-		cout << TermColor::Reset << endl;
+		std::cout << TermColor::Reset << std::endl;
 	}
 	
 	void ReportsManager::ReportError(size_t where, const std::string &msg, bool noStop)
@@ -150,14 +149,14 @@ namespace Pascal
 		ReportError(where, typeToString(type) + additionalMsg, noStop);
 	}
 	
-	void ReportsManager::ReportWarning(size_t where, const std::string &msg)
+	void ReportsManager::ReportWarning(size_t where, const std::string &msg, bool noStop)
 	{
 		warningsCount++;
 
 		PrintReport(where, ((treatWarningsAsError) ? (ReportType::ERROR) : (ReportType::WARNING)), msg);
 		
-		//if (treatWarningsAsError)
-		//	throw StopExecution();
+		if (!noStop)
+			throw StopExecution();
 	}
 
 	void ReportsManager::ReportWarning(size_t where, WarningType type)
@@ -185,9 +184,9 @@ namespace Pascal
 		ErrorPos res;
 		res.where = where;
 	
-		for (res.endPos = where; res.endPos < currentFile->size(); res.endPos++)
+		for (res.endPos = where; res.endPos < currentFile.source->size(); res.endPos++)
 		{
-			if ((*currentFile)[res.endPos] == '\n')
+			if ((*currentFile.source)[res.endPos] == '\n')
 			{
 				res.endPos--;
 				break;
@@ -196,7 +195,7 @@ namespace Pascal
 
 		for (res.startPos = where; res.startPos != 0; res.startPos--)
 		{
-			if ((*currentFile)[res.startPos] == '\n')
+			if ((*currentFile.source)[res.startPos] == '\n')
 			{
 				res.startPos++;
 				break;
@@ -206,14 +205,14 @@ namespace Pascal
 		res.lineNumber = 0;
 		for (size_t i = res.endPos; i != static_cast<size_t>(-1); i--)
 		{
-			if ((*currentFile)[i] == '\n')
+			if ((*currentFile.source)[i] == '\n')
 				res.lineNumber++;
 		}
 		
 	    size_t tabAdjust = 0;
 		for (size_t i = res.startPos; i <= res.where; i++)
 		{
-			if ((*currentFile)[i] == '\t')
+			if ((*currentFile.source)[i] == '\t')
 			{
 				tabAdjust += 3;
 			}
@@ -226,7 +225,7 @@ namespace Pascal
 		return res;
 	}
 
-	string ReportsManager::typeToString(ErrorType type)
+	std::string ReportsManager::typeToString(ErrorType type)
 	{
 		switch (type)
 		{
@@ -242,12 +241,22 @@ namespace Pascal
 			return "name redefinition";
 		case ErrorType::ILLEGAL_ASSIGNMENT:
 			return "attempt to assign a value to non-variable object";
+		case ErrorType::ILLEGAL_STATEMENT:
+			return "can't recognize statement";
+		case ErrorType::CALLING_NON_PROCEDURE:
+			return "attempt to call non-callable object";
+		case ErrorType::CALLING_NON_FUNCTION:
+			return "attempt to call non-function object";
+		case ErrorType::PROCEDURE_AS_FUNCTION:
+			return "required function, not procedure";
+		case ErrorType::WRONG_ARGUMENTS_COUNT:
+			return "wrong arguments count";
 		case ErrorType::NONE:
 			return "NONE ERROR";
 		}
 	}
 
-	string ReportsManager::typeToString(WarningType type)
+	std::string ReportsManager::typeToString(WarningType type)
 	{
 		switch (type)
 		{

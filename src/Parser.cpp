@@ -1,53 +1,45 @@
+#include "AST.hpp"
+#include "Lexer.hpp"
+#include <memory>
 #include <pscpch.hpp>
 #include <Parser.hpp>
 #include <ReportsManager.hpp>
 
-using namespace std;
-
-#define REQUIRE(_type) require(TokenType::_type)
-#define MATCHING(_type) match(TokenType::_type).type != nullToken.type
-#define IS_NULL(token) token.type == TokenType::NONE
-
 namespace Pascal
-{
-	using namespace AST;
-	
-	unique_ptr<ProgramNode> Parser::parseProgram()
+{	
+	std::unique_ptr<AST::ProgramNode> Parser::parseProgram()
 	{
-		REQUIRE(PROGRAM);
+		require(TokenType::PROGRAM);
 
-		Token name = REQUIRE(IDENTIFIER);
-		REQUIRE(SEMICOLON);
-		unique_ptr<BlockNode> blk = parseBlock();
+		Token name = require(TokenType::IDENTIFIER);
+		require(TokenType::SEMICOLON);
+		std::unique_ptr<AST::BlockNode> blk = parseBlock();
 
-		REQUIRE(DOT);
+		require(TokenType::DOT);
 		
-		return make_unique<ProgramNode>(name, move(blk));
+		return std::make_unique<AST::ProgramNode>(name, move(blk));
 	}
 
-	unique_ptr<BlockNode> Parser::parseBlock()
+	std::unique_ptr<AST::BlockNode> Parser::parseBlock()
 	{
-		unique_ptr<vector<unique_ptr<VarDeclNode>>> varDecls =
-			make_unique<vector<unique_ptr<VarDeclNode>>>();
-
-		unique_ptr<vector<unique_ptr<ProcDeclNode>>> procDecls =
-			make_unique<vector<unique_ptr<ProcDeclNode>>>();
+	    std::vector<std::unique_ptr<AST::VarDeclNode>> varDecls;
+		std::vector<std::unique_ptr<AST::ProcDeclNode>> procDecls;
 	
 		while (true)
 		{
-			if (MATCHING(VAR))
+			if (matching(TokenType::VAR))
 			{
 				do
 				{
-					parseVarDecls(*varDecls);
-					REQUIRE(SEMICOLON);
+					parseVarDecls(varDecls);
+					require(TokenType::SEMICOLON);
 				}
 				while (currentToken().type == TokenType::IDENTIFIER);
 			}
-			else if (MATCHING(PROCEDURE))
+			else if (matching(TokenType::PROCEDURE))
 			{
-				procDecls->push_back(parseProcDecl());
-				REQUIRE(SEMICOLON);
+				procDecls.push_back(parseProcDecl());
+				require(TokenType::SEMICOLON);
 			}
 			else
 			{
@@ -55,170 +47,210 @@ namespace Pascal
 			}
 		}
 	    
-		return make_unique<BlockNode>(move(varDecls), move(procDecls), parseCompound());
+		return std::make_unique<AST::BlockNode>(move(varDecls), move(procDecls), parseCompound());
 	}
 
-	inline std::unique_ptr<ProcDeclNode> Parser::parseProcDecl()
+	inline std::unique_ptr<AST::ProcDeclNode> Parser::parseProcDecl()
 	{
-		Token id = REQUIRE(IDENTIFIER);
+		Token id = require(TokenType::IDENTIFIER);
 
-		unique_ptr<vector<unique_ptr<ParamNode>>> paramDecls =
-			make_unique<vector<unique_ptr<ParamNode>>>();
+	    std::vector<std::unique_ptr<AST::ParamNode>> paramDecls;  
 		
-		if (MATCHING(OPEN_PAREN))
+		if (matching(TokenType::OPEN_PAREN))
 		{
 			do
 			{
-				parseParam(*paramDecls);
-			} while (MATCHING(SEMICOLON));
-			REQUIRE(CLOSE_PAREN);
+				parseParam(paramDecls);
+			} while (matching(TokenType::SEMICOLON));
+			require(TokenType::CLOSE_PAREN);
 		}
 	    
-		REQUIRE(SEMICOLON);
-		return make_unique<ProcDeclNode>(id, move(paramDecls), parseBlock());
+		require(TokenType::SEMICOLON);
+		return std::make_unique<AST::ProcDeclNode>(id, move(paramDecls), parseBlock());
 	}
 	
 	inline void Parser::parseParam(std::vector<std::unique_ptr<AST::ParamNode>>& res)
 	{
-		vector<Token_t> ids;
-		ids.push_back(REQUIRE(IDENTIFIER));
-		while (MATCHING(COMMA))
+		std::vector<Token_t> ids;
+		ids.push_back(require(TokenType::IDENTIFIER));
+		while (matching(TokenType::COMMA))
 		{
-			ids.push_back(REQUIRE(IDENTIFIER));
+			ids.push_back(require(TokenType::IDENTIFIER));
 		}
 
-		REQUIRE(COLON);
+		require(TokenType::COLON);
 
-		TypeNode type(REQUIRE(IDENTIFIER));
+		AST::TypeNode type(require(TokenType::IDENTIFIER));
 		
 		for (auto const& element : ids)
 		{
-			res.push_back(make_unique<ParamNode>(
-								   make_unique<VariableNode>(element),
-								   make_unique<TypeNode>(type)
+			res.push_back(std::make_unique<AST::ParamNode>(
+								   std::make_unique<AST::VariableNode>(element),
+								   std::make_unique<AST::TypeNode>(type)
 								   ));
 		}
 	}
 	
-	inline void Parser::parseVarDecls(vector<unique_ptr<VarDeclNode>>& res)
+	inline void Parser::parseVarDecls(std::vector<std::unique_ptr<AST::VarDeclNode>>& res)
 	{
-		vector<Token_t> ids;
-		ids.push_back(REQUIRE(IDENTIFIER));
-		while (MATCHING(COMMA))
+		std::vector<Token_t> ids;
+		ids.push_back(require(TokenType::IDENTIFIER));
+		while (matching(TokenType::COMMA))
 		{
-			ids.push_back(REQUIRE(IDENTIFIER));
+			ids.push_back(require(TokenType::IDENTIFIER));
 		}
 
-		REQUIRE(COLON);
+		require(TokenType::COLON);
 
-		TypeNode type(REQUIRE(IDENTIFIER));
+		AST::TypeNode type(require(TokenType::IDENTIFIER));
 		
 		for (auto const& element : ids)
 		{
-			res.push_back(make_unique<VarDeclNode>(
-								   make_unique<VariableNode>(element),
-								   make_unique<TypeNode>(type)
-								   ));
+			res.push_back(std::make_unique<AST::VarDeclNode>(
+							  std::make_unique<AST::VariableNode>(element),
+							  std::make_unique<AST::TypeNode>(type)
+							  ));
 		}
 	}
 
-	unique_ptr<CompoundNode> Parser::parseCompound()
+	std::unique_ptr<AST::CompoundNode> Parser::parseCompound()
 	{
-		REQUIRE(BEGIN);
+		require(TokenType::BEGIN);
 		
-		unique_ptr<vector<unique_ptr<StatementNode>>> statements =
-			make_unique<vector<unique_ptr<StatementNode>>>();
+		std::vector<std::unique_ptr<AST::StatementNode>> statements;
+		
 		do
 		{
-			statements->push_back(parseStatement());
+			statements.push_back(parseStatement());
 		}
-		while (MATCHING(SEMICOLON));
+		while (matching(TokenType::SEMICOLON));
 		
-		REQUIRE(END);
+		require(TokenType::END);
 
-		return make_unique<CompoundNode>(move(statements));
+		return std::make_unique<AST::CompoundNode>(move(statements));
 	}
 
-	unique_ptr<StatementNode> Parser::parseStatement()
+	std::unique_ptr<AST::StatementNode> Parser::parseStatement()
 	{
 		if (currentToken().type == TokenType::BEGIN)
+		{
 			return parseCompound();
+		}
 		else if (currentToken().type == TokenType::IDENTIFIER)
-			return parseAssignment();
+		{
+			Token id = match(TokenType::IDENTIFIER);
+			Token temp = match({ TokenType::ASSIGNMENT, TokenType::OPEN_PAREN });
+			switch (temp.type)
+			{
+			case TokenType::ASSIGNMENT:
+			{
+				return std::make_unique<AST::AssignmentNode>(
+					std::make_unique<AST::VariableNode>(id),
+					parseExpr()
+					);
+				break;
+			}
+			case TokenType::OPEN_PAREN:
+			{
+				std::vector<std::unique_ptr<AST::Node>> params;
+				if (!matching(TokenType::CLOSE_PAREN))
+				{
+					do
+					{
+					    params.push_back(parseExpr());
+					} while (matching(TokenType::COMMA));
+
+					require(TokenType::CLOSE_PAREN);
+				}
+				return std::make_unique<AST::ProcCallNode>(id, std::move(params));
+				break;
+			}
+			default:
+				ReportsManager::ReportError(temp.pos, ErrorType::ILLEGAL_STATEMENT);
+				return std::make_unique<AST::NullStatementNode>();
+			}
+		}
+		else if (currentToken().type == TokenType::SEMICOLON)
+		{
+			ReportsManager::ReportError(currentToken().pos, ErrorType::ILLEGAL_STATEMENT);
+			return std::make_unique<AST::NullStatementNode>();
+		}
 		else
-			return make_unique<AST::NullStatementNode>();
+		{
+			return std::make_unique<AST::NullStatementNode>();
+		}
 	}
 
-	unique_ptr<AssignmentNode> Parser::parseAssignment()
+	std::unique_ptr<AST::AssignmentNode> Parser::parseAssignment()
 	{
-		unique_ptr<VariableNode> var = make_unique<VariableNode>(REQUIRE(IDENTIFIER));
-		REQUIRE(ASSIGNMENT);
-		unique_ptr<Node> expr = parseExpr();
+		std::unique_ptr<AST::VariableNode> var = std::make_unique<AST::VariableNode>(require(TokenType::IDENTIFIER));
+		require(TokenType::ASSIGNMENT);
+		std::unique_ptr<AST::Node> expr = parseExpr();
 
-		return make_unique<AssignmentNode>(move(var), move(expr));
+		return std::make_unique<AST::AssignmentNode>(move(var), move(expr));
 	}
 
-	unique_ptr<Node> Parser::parseExpr()
+	std::unique_ptr<AST::Node> Parser::parseExpr()
 	{
-		unique_ptr<Node> left = parseMultDiv();
+		std::unique_ptr<AST::Node> left = parseMultDiv();
 
 		while (true)
 		{
 		    Token_t operation = match({ TokenType::PLUS, TokenType::MINUS });
-			if (IS_NULL(operation))
+			if (operation.type == TokenType::NONE)
 				break;
 
-			unique_ptr<Node> right = parseMultDiv();
-			left = make_unique<BinOpNode>(move(left), move(right), operation);
+			std::unique_ptr<AST::Node> right = parseMultDiv();
+			left = std::make_unique<AST::BinOpNode>(move(left), move(right), operation);
 		}
 		
 		return left;
 	}
 
-	unique_ptr<Node> Parser::parseMultDiv()
+	std::unique_ptr<AST::Node> Parser::parseMultDiv()
 	{
-		unique_ptr<Node> left = parseUnary();
+		std::unique_ptr<AST::Node> left = parseUnary();
 
 		while (true)
 		{
 			Token_t operation = match({
 					TokenType::PRODUCT, TokenType::DIVISION, TokenType::MOD
 				});
-			if (IS_NULL(operation))
+			if (operation.type == TokenType::NONE)
 				break;
 			
-			unique_ptr<Node> right = parseUnary();
-			left = make_unique<BinOpNode>(move(left), move(right), operation);
+			std::unique_ptr<AST::Node> right = parseUnary();
+			left = std::make_unique<AST::BinOpNode>(move(left), move(right), operation);
 		}
 		
 		return left;
 	}
 
-	unique_ptr<Node> Parser::parseUnary()
+	std::unique_ptr<AST::Node> Parser::parseUnary()
 	{
-		if (MATCHING(MINUS) || MATCHING(PLUS))
+		if (matching(TokenType::MINUS) || matching(TokenType::PLUS))
 		{
 			Token t = previousToken();
-			return make_unique<UnaryOpNode>(parseUnary(), t);
+			return std::make_unique<AST::UnaryOpNode>(parseUnary(), t);
 		}
-		else if (MATCHING(NUMBER_LITERAL))
+		else if (matching(TokenType::NUMBER_LITERAL))
 		{
-			return make_unique<NumberNode>(previousToken());
+			return std::make_unique<AST::NumberNode>(previousToken());
 		}
-		else if (MATCHING(IDENTIFIER))
+		else if (matching(TokenType::IDENTIFIER))
 		{
-			return make_unique<VariableNode>(previousToken());
+			return std::make_unique<AST::VariableNode>(previousToken());
 		}
-		else if (MATCHING(OPEN_PAREN))
+		else if (matching(TokenType::OPEN_PAREN))
 		{
-			unique_ptr<Node> expr = parseExpr();
-			REQUIRE(CLOSE_PAREN);
+			std::unique_ptr<AST::Node> expr = parseExpr();
+			require(TokenType::CLOSE_PAREN);
 			return expr;
 		}
 		else
 		{
 			ReportsManager::ReportError(currentToken().pos, ErrorType::UNEXPECTED_WORD);
-			return nullptr;
+			return std::make_unique<AST::NullStatementNode>();
 		}
 	}
 
@@ -235,7 +267,7 @@ namespace Pascal
 		}	
 	}
 
-	Token Parser::match(vector<TokenType> const& types)
+	Token Parser::match(std::vector<TokenType> const& types)
 	{
 		Token curTok = currentToken();
 
@@ -251,18 +283,23 @@ namespace Pascal
 		return nullToken;
 	}
 
+	inline bool Parser::matching(TokenType type)
+	{
+		return match(type).type != TokenType::NONE;
+	}
+
 	inline Token Parser::require(TokenType type)
 	{
 		Token res = match(type);
-		if (IS_NULL(res))
+		if (res.type == TokenType::NONE)
 			ReportsManager::ReportError(currentToken().pos, ErrorType::EXPECTED, tokenTypeToString(type));
 		return res;
 	}
 
-	Token Parser::require(vector<TokenType> const& types)
+	Token Parser::require(std::vector<TokenType> const& types)
 	{
 		Token res = match(types);
-		if (IS_NULL(res))
+		if (res.type == TokenType::NONE)
 		{
 			std::string err = "";
 		    for (unsigned i = 0; i < types.size(); i++)
@@ -292,7 +329,3 @@ namespace Pascal
 			return nullToken;
 	}
 }
-
-#undef REQUIRE
-#undef MATCHING
-#undef IS_NULL

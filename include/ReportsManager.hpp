@@ -15,7 +15,12 @@ namespace Pascal
 		EXPECTED,
 		NAME_UNDEFINED,
 		NAME_REDEFINITION,
-		ILLEGAL_ASSIGNMENT
+		ILLEGAL_ASSIGNMENT,
+		ILLEGAL_STATEMENT,
+		CALLING_NON_PROCEDURE,
+		CALLING_NON_FUNCTION,
+		WRONG_ARGUMENTS_COUNT,
+	    PROCEDURE_AS_FUNCTION
 	};
 
 	enum class WarningType
@@ -25,15 +30,21 @@ namespace Pascal
 		UNUSED_VAR
 	};
 
+	typedef struct
+	{
+		std::string fileName;
+		std::shared_ptr<const std::string> source;
+	} ReportFile;
+
 	class ReportsManager
 	{
 	public:
 		static void Init(std::vector<std::string> const& args);
 	
-		static void SetCurrentFile(std::shared_ptr<std::string> source, std::string const& fileName);
+		static void SetCurrentFile(ReportFile const& file);
 
-		static void PushInclude(std::string const& fileName);
-		static void PopInclude();
+		static void PushInclude(ReportFile const& file);
+		static ReportFile PopInclude();
 	
 		static void ReportError(size_t where, ErrorType type, bool noStop = true);
 		static void ReportError(size_t where, ErrorType type,
@@ -42,7 +53,7 @@ namespace Pascal
 
 		static void ReportWarning(size_t where, WarningType type);
 		static void ReportWarning(size_t where, WarningType type, std::string const& additionalMsg);
-		static void ReportWarning(size_t where, std::string const& msg);
+		static void ReportWarning(size_t where, std::string const& msg, bool noStop = true);
 
 		static void ReportNote(size_t where, std::string const& msg);
 
@@ -50,11 +61,9 @@ namespace Pascal
 		static unsigned GetWarningsCount();
 		
 	private:
-		// TODO: Probably stack of shared_ptr<string>
-		static std::vector<std::string> includeStack;
+		static std::vector<ReportFile> includeStack;
 
-		static std::shared_ptr<std::string> currentFile;
-		static std::string currentFileName;
+		static ReportFile currentFile;
 		
 		static std::vector<ErrorType> disallowedErrors;
 		static std::vector<WarningType> disallowedWarnings;

@@ -26,6 +26,7 @@ namespace Pascal
 		void visitUnaryOpNode(AST::UnaryOpNode const& node);
 		void visitProcDeclNode(AST::ProcDeclNode const& node);
 		void visitParamNode(const AST::ParamNode &node);
+		void visitProcCallNode(const AST::ProcCallNode& node);
 
 		std::string toString() const;
 		

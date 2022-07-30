@@ -1,3 +1,4 @@
+#include "Visitor.hpp"
 #include <pscpch.hpp>
 #include <SimpleEvalVisitor.hpp>
 
@@ -123,6 +124,11 @@ namespace Pascal
 	}
 
 	void SimpleEvalVisitor::visitParamNode(const AST::ParamNode &node)
+	{
+		
+	}
+
+	void SimpleEvalVisitor::visitProcCallNode(const AST::ProcCallNode& node)
 	{
 		
 	}

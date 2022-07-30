@@ -14,7 +14,7 @@ namespace Pascal
 	
 	void CodePrettifier::visitVarDeclNode(AST::VarDeclNode const& node)
 	{
-		ss << node.getVar().getToken().str << currentScopeLevel << " : " <<
+		ss << node.getVar().getToken().str << " : " <<
 			node.getType().getToken().str << ";";
 	}
 	
@@ -67,7 +67,7 @@ namespace Pascal
 	
 	void CodePrettifier::visitVariableNode(AST::VariableNode const& node)
 	{
-		ss << node.getToken().str << currentScopeLevel;
+		ss << node.getToken().str;
 	}
 	
 	void CodePrettifier::visitNullStatementNode(AST::NullStatementNode const& node)
@@ -95,7 +95,7 @@ namespace Pascal
 	
 	void CodePrettifier::visitProcDeclNode(AST::ProcDeclNode const& node)
 	{
-		ss << "procedure " << node.getToken().str;
+		ss << "procedure " << node.getProcName().str;
 		if (!node.getParams().empty())
 		{
 			ss << "(";
@@ -111,7 +111,7 @@ namespace Pascal
 
 		currentScopeLevel++;
 		node.getBlock().accept(this);
-		ss << " { END OF \"" << node.getToken().str << "\" }" << std::endl;
+		ss << " { END OF \"" << node.getProcName().str << "\" }" << std::endl;
 		currentScopeLevel--;
 	}
 	
@@ -119,6 +119,21 @@ namespace Pascal
 	{
 		ss << node.getVar().getToken().str << currentScopeLevel << " : " <<
 			node.getType().getToken().str;
+	}
+
+	void CodePrettifier::visitProcCallNode(const AST::ProcCallNode& node)
+	{
+		ss << node.getProcName().str << "(";
+		if (!node.getArguments().empty())
+		{
+			for (unsigned i = 0; i < node.getArguments().size(); i++)
+			{
+				node.getArguments()[i]->accept(this);
+				if (i != node.getArguments().size() - 1)
+					ss << ", ";
+			}
+		}
+		ss << ");";
 	}
 
 	std::string CodePrettifier::toString() const

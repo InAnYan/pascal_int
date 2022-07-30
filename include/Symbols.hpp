@@ -102,21 +102,23 @@ namespace Pascal
 	{
 	public:
 		ProcedureSymbol(std::string const& name, size_t whereDefined,
-						std::unique_ptr<std::vector<std::unique_ptr<VariableSymbol>>> params)
-			: Symbol(name, whereDefined), m_Params(std::move(params)) {}
+					    std::vector<VariableSymbol> const& params)
+			: Symbol(name, whereDefined), m_Params(params) {}
 		
 		const SymbolType getType() const { return SymbolType::PROCEDURE; }
+		std::vector<VariableSymbol> const& getArgs() const
+		{ return m_Params; }
 		
 		std::string toString() const
 		{
 			std::stringstream ss;
 			ss << "<ProcedureSymbol(name=\"" << getName() << "\", params=[";
-			if (!(m_Params == nullptr || m_Params->size() == 0))
+			if (!(m_Params.empty()))
 			{
-				for (unsigned i = 0; i < m_Params->size(); i++)
+				for (unsigned i = 0; i < m_Params.size(); i++)
 				{
-					ss << (*m_Params)[i]->toString();
-					if (i != m_Params->size() - 1)
+					ss << m_Params[i].toString();
+					if (i != m_Params.size() - 1)
 						ss << ", ";
 				}
 			}
@@ -125,7 +127,7 @@ namespace Pascal
 		}
 
 	private:
-		std::unique_ptr<std::vector<std::unique_ptr<VariableSymbol>>> m_Params;
+		std::vector<VariableSymbol> m_Params;
 	};
 	
 	class SymbolTable

@@ -2,17 +2,17 @@
 #include <Lexer.hpp>
 #include <ReportsManager.hpp>
 
-using namespace std;
-
 namespace Pascal
 {
-	TokenList Tokenize(shared_ptr<string> const& source)
+	const Token_t nullToken = { TokenType::NONE, "", 0 };
+	
+	TokenList Tokenize(std::shared_ptr<std::string> const& source)
 	{
-	    stringstream ss;
-	    TokenList res = make_shared<vector<Token_t>>();
+	    std::stringstream ss;
+	    TokenList res = std::make_shared<std::vector<Token_t>>();
 		Token_t curTok;
 		TokenType& ttype = curTok.type;
-		string const& file = *source;
+		std::string const& file = *source;
 		
 		for (size_t pos = 0; pos <= file.size(); pos++)
 		{
@@ -42,7 +42,7 @@ namespace Pascal
 				
 				if (ss.tellp() != std::streampos(0))
 				{
-					string work = ss.str();
+					std::string work = ss.str();
 					transform(work.begin(), work.end(), work.begin(), ::tolower);
 					ss.str("");
 					ss.clear();
@@ -151,7 +151,7 @@ namespace Pascal
 		return res;
 	}
 
-	std::string tokenTypeToString(TokenType type)
+    std::string tokenTypeToString(TokenType type)
 	{
 		switch (type)
 		{

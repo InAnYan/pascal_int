@@ -144,7 +144,7 @@ namespace Pascal
 
 	void GraphvizVisitor::visitProcDeclNode(const AST::ProcDeclNode &node)
 	{
-		std::string name = "ProcDecl: \"" + node.getToken().str + "\"";
+		std::string name = "ProcDecl: \"" + node.getProcName().str + "\"";
 	    derivateStack.push_back(createNode(name));
 	    for (auto const& e : node.getParams())
 		{
@@ -159,6 +159,14 @@ namespace Pascal
 		derivateStack.push_back(createNode("Param"));
 		node.getVar().accept(this);
 		node.getType().accept(this);
+		derivateStack.pop_back();
+	}
+
+	void GraphvizVisitor::visitProcCallNode(const AST::ProcCallNode& node)
+	{
+		derivateStack.push_back(createNode("ProcCall: \"" + node.getProcName().str + "\""));
+		for (auto const& e : node.getArguments())
+			e->accept(this);
 		derivateStack.pop_back();
 	}
 }
