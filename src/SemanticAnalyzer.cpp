@@ -122,7 +122,21 @@ namespace Pascal
 	
 	void SemanticAnalyzer::visitNumberNode(AST::NumberNode const& node)
 	{
-		
+		try
+		{
+		    std::stoi(node.getToken().str);
+		}
+		catch (...)
+		{
+			try
+			{
+			    std::stof(node.getToken().str);
+			}
+			catch (...)
+			{
+				ReportsManager::ReportError(node.getToken().pos, ErrorType::CANT_PARSE_LITERAL);
+			}
+		}
 	}
 	
 	void SemanticAnalyzer::visitBinOpNode(AST::BinOpNode const& node)

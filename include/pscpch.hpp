@@ -2,6 +2,7 @@
 #define PASCAL_PCH_HPP
 
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <string>
 #include <sstream>

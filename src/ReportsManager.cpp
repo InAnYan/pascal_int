@@ -251,6 +251,10 @@ namespace Pascal
 			return "required function, not procedure";
 		case ErrorType::WRONG_ARGUMENTS_COUNT:
 			return "wrong arguments count";
+		case ErrorType::CANT_PARSE_LITERAL:
+			return "can't parse literal";
+		case ErrorType::DIVISION_BY_ZERO:
+			return "division by zero";
 		case ErrorType::NONE:
 			return "NONE ERROR";
 		}

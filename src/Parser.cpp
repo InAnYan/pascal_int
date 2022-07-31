@@ -1,5 +1,5 @@
-#include "AST.hpp"
-#include "Lexer.hpp"
+#include <AST.hpp>
+#include <Lexer.hpp>
 #include <memory>
 #include <pscpch.hpp>
 #include <Parser.hpp>
@@ -166,11 +166,11 @@ namespace Pascal
 				break;
 			}
 			default:
-				ReportsManager::ReportError(temp.pos, ErrorType::ILLEGAL_STATEMENT);
+				ReportsManager::ReportError(id.pos, ErrorType::ILLEGAL_STATEMENT);
 				return std::make_unique<AST::NullStatementNode>();
 			}
 		}
-		else if (currentToken().type == TokenType::SEMICOLON)
+		else if (currentToken().type != TokenType::SEMICOLON)
 		{
 			ReportsManager::ReportError(currentToken().pos, ErrorType::ILLEGAL_STATEMENT);
 			return std::make_unique<AST::NullStatementNode>();

@@ -1,3 +1,4 @@
+#include "Interpreter.hpp"
 #include <pscpch.hpp>
 #include <fstream>
 
@@ -97,31 +98,28 @@ int main(int argc, char* argv[])
 				tree = parser.parseProgram();
 			}
 		}
-		
-		Pascal::SimpleEvalVisitor eval;
-		tree->accept(&eval);
-		
+
 		Pascal::SemanticAnalyzer symTab;
 		tree->accept(&symTab);
-		
-		Pascal::GraphvizVisitor graph(args[0] + ".dot");
-		tree->accept(&graph);
-		graph.flush();
-		
-		cout << symTab.getSymbolTable()->toString();
-		cout << endl << "Vars:" << endl;
-		for (auto const& i : eval.vars)
+
+		if (Pascal::ReportsManager::GetErrorsCount() == 0)
 		{
-			cout << i.first << " = " << i.second << endl;
+			Pascal::GraphvizVisitor graph(args[0] + ".dot");
+			tree->accept(&graph);
+			graph.flush();
+			
+			string cmd = "dot -Tsvg " + args[0] + ".dot -o " + args[0] + ".svg";
+			exec(cmd.c_str());
+
+			cout << symTab.getSymbolTable()->toString();
+
+			Pascal::CodePrettifier pretty;
+			tree->accept(&pretty);
+			cout << endl << pretty.toString() << endl;
+
+			Pascal::Interpreter interpreter;
+		    tree->accept(&interpreter);
 		}
-
-		string cmd = "dot -Tsvg " + args[0] + ".dot -o " + args[0] + ".svg";
-		exec(cmd.c_str());
-
-		Pascal::CodePrettifier pretty;
-	    tree->accept(&pretty);
-
-		cout << endl << pretty.toString() << endl;
 	}
 	catch (Pascal::StopExecution const& e)
 	{

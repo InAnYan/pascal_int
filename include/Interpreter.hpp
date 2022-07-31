@@ -1,17 +1,15 @@
-#ifndef SIMPLE_EVAL_VISITOR
-#define SIMPLE_EVAL_VISITOR
+#ifndef PASCAL_INTERPRETER_HPP
+#define PASCAL_INTERPRETER_HPP
 
 #include <Visitor.hpp>
-
-#include <map>
-#include <string>
+#include <CallStack.hpp>
 
 namespace Pascal
 {
-	class SimpleEvalVisitor : public AST::Visitor
+	class Interpreter : public AST::Visitor
 	{
-	public:	
-	    void visitProgramNode(AST::ProgramNode const& node);
+	public:
+		void visitProgramNode(AST::ProgramNode const& node);
 		void visitVarDeclNode(AST::VarDeclNode const& node);
 		void visitBlockNode(AST::BlockNode const& node);
 		void visitTypeNode(AST::TypeNode const& node);
@@ -26,10 +24,11 @@ namespace Pascal
 		void visitProcDeclNode(const AST::ProcDeclNode &node);
 		void visitParamNode(const AST::ParamNode &node);
 		void visitProcCallNode(const AST::ProcCallNode& node);
-		
-		float acc = 0;
-		std::map<std::string, float> vars;
+
+	private:
+		CallStack m_CallStack;
+		ARObject m_Accum;
 	};
-}
+}    
 
 #endif
